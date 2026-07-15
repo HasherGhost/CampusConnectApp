@@ -56,11 +56,11 @@ export default function StaffTab() {
   const attendancePercentage = Math.round((totalPresent / totalStaff) * 100);
 
   const history = [
-    { id: '1', date: '09 Jul 2026', present: 74, total: 80 },
-    { id: '2', date: '08 Jul 2026', present: 75, total: 80 },
-    { id: '3', date: '07 Jul 2026', present: 70, total: 80 },
-    { id: '4', date: '06 Jul 2026', present: 78, total: 80 },
-    { id: '5', date: '05 Jul 2026', present: 76, total: 80 },
+    { id: '1', date: '09 Jul 2026', present: 34, total: 50 },
+    { id: '2', date: '08 Jul 2026', present: 35, total: 50 },
+    { id: '3', date: '07 Jul 2026', present: 30, total: 50 },
+    { id: '4', date: '06 Jul 2026', present: 38, total: 50 },
+    { id: '5', date: '05 Jul 2026', present: 36, total: 50 },
   ];
 
   return (
