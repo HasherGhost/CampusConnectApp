@@ -22,7 +22,7 @@ function CustomDrawerContent(props: any) {
       </View>
 
       <DrawerContentScrollView {...props} contentContainerStyle={styles.scrollContent}>
-        {/* Reports / Dashboard Link */}
+        {/* Dashboard Link */}
         <TouchableOpacity
           style={[styles.drawerItem, activeRouteName === 'index' && styles.drawerItemActive]}
           onPress={() => props.navigation.navigate('index')}
@@ -49,6 +49,20 @@ function CustomDrawerContent(props: any) {
           />
           <Text style={[styles.drawerItemText, activeRouteName === 'staff' && styles.drawerItemTextActive]}>
             Staff
+          </Text>
+        </TouchableOpacity>
+
+        {/*Non teaching Staff Link*/}
+        <TouchableOpacity
+          style={[styles.drawerItem, activeRouteName === 'non_teaching_staff' && styles.drawerItemActive]}
+          onPress={() => props.navigation.navigate('non_teaching_staff')}>
+          <Ionicons
+            name = "briefcase-outline"
+            size={22}
+            color={activeRouteName === 'non_teaching_staff' ? '#cb4f36' : '#475569'}
+          />
+          <Text style={[styles.drawerItemText, activeRouteName === 'non_teaching_staff' && styles.drawerItemTextActive]}>
+            Non Teaching Staff
           </Text>
         </TouchableOpacity>
 
@@ -116,6 +130,12 @@ export default function HODLayout() {
         }}
       />
       <Drawer.Screen
+        name="non_teaching_staff"
+        options={{
+          title: 'Non Teaching Staff',
+        }}
+      />
+      <Drawer.Screen
         name="students"
         options={{
           title: 'Students',
@@ -158,7 +178,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ae2525',
     borderBottomWidth: 3,
-    borderBottomColor: '#d1a550',
+    borderBottomColor: '#ffd723',
   },
   avatarContainer: {
     marginRight: 12,

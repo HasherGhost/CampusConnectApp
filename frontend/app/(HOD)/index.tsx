@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function HODDashboard() {
@@ -28,7 +28,7 @@ export default function HODDashboard() {
           </View>
           <View style={styles.cardBody}>
             <Text style={styles.cardValue}>--</Text>
-            <Text style={styles.cardSubtext}>-- Students present</Text>
+            <Text style={styles.cardSubtext}>-- Students present  -- Students absent</Text>
           </View>
           <View style={styles.cardBadge}>
 
@@ -45,7 +45,7 @@ export default function HODDashboard() {
           </View>
           <View style={styles.cardBody}>
             <Text style={styles.cardValue}>--</Text>
-            <Text style={styles.cardSubtext}>-- Staff present</Text>
+            <Text style={styles.cardSubtext}>-- Staff present   -- Staff absent</Text>
           </View>
           <View style={styles.cardBadge}>
 
@@ -109,6 +109,14 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#e2e8f0',
+    
+    // Adding shadows to the card
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+    boxShadow: '0px 2px 10px rgba(0,0,0,0.08)',
   },
   studentBorder: {
     borderLeftWidth: 4,
