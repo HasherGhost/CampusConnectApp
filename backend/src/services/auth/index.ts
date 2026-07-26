@@ -3,6 +3,7 @@ import { AuthUser, JwtPayload, LoginRequest, LoginResponse, UserRole } from "../
 import { authenticateFaculty } from "./facultyAuth";
 import { authenticateGuard } from "./guardAuth";
 import { authenticateStudent } from "./studentAuth";
+import { authenticateHod } from "./hodAuth";
 
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret-change-me";
 const JWT_EXPIRATION = "7d";
@@ -11,6 +12,7 @@ const ROLE_HANDLERS: Record<UserRole, (erpId: string, password: string) => Promi
   faculty: authenticateFaculty,
   guard: authenticateGuard,
   student: authenticateStudent,
+  hod: authenticateHod,
 };
 
 const normalizeErpId = (erpId: string): string => erpId.trim().toUpperCase();
@@ -38,6 +40,9 @@ export const authenticateByRole = async (payload: LoginRequest): Promise<LoginRe
       erpId: user.erpId,
       name: user.name,
       role: user.role,
+      departmentId: user.departmentId,
+      departmentName: user.departmentName,
+      departmentShortCode: user.departmentShortCode,
     } satisfies JwtPayload,
     JWT_SECRET,
     { expiresIn: JWT_EXPIRATION },
