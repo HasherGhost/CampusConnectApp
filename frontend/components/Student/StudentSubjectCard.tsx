@@ -1,6 +1,7 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { SubjectAttendance } from "../../types/attendance";
+import { useRouter } from "expo-router";
 
 type Props = {
   subject: SubjectAttendance;
@@ -33,8 +34,20 @@ const getAvatarColor = (subjectId: number) =>
   AVATAR_COLORS[subjectId % AVATAR_COLORS.length];
 
 export default function StudentSubjectCard({ subject }: Props) {
+  const router = useRouter();
   return (
-    <TouchableOpacity activeOpacity={0.85} style={styles.card}>
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={styles.card}
+      onPress={() =>
+        router.push({
+          pathname: "/(student)/subject/[subjectId]",
+          params: {
+            subjectId: subject.subjectId.toString(),
+          },
+        })
+      }
+    >
       <View style={styles.topRow}>
         <View style={[
               styles.subjectIcon,
