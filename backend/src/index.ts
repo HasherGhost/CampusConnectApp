@@ -9,6 +9,7 @@ import authRoutes from "./routes/authRoutes";
 import gatePassRoutes from "./routes/gatePassRoutes";
 import facultyRoutes from "./routes/facultyRoutes";
 import studentAttendanceRoutes from "./routes/studentRoutes";
+import hodRoutes from "./routes/hodRoutes";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/gate-passes", gatePassRoutes);
 app.use("/api/faculty", facultyRoutes);
 app.use("/api/student", studentAttendanceRoutes);
+app.use("/api/hod", hodRoutes);
 
 app.post("/api/send-notification", async (req, res) => {
   try {
