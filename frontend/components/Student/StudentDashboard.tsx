@@ -131,6 +131,7 @@ const getGreetingData = (): GreetingData => {
   };
 
   useEffect(() => {
+    console.log(session?.token);
     fetchAttendance();
   }, []);
 

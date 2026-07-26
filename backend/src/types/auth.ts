@@ -1,4 +1,4 @@
-export type UserRole = "faculty" | "guard" | "student";
+export type UserRole = "faculty" | "guard" | "student" | "hod";
 
 export type LoginRequest = {
   erpId: string;
@@ -11,6 +11,9 @@ export type AuthUser = {
   erpId: string;
   name: string;
   role: UserRole;
+  departmentId?: number;
+  departmentName?: string;
+  departmentShortCode?: string;
 };
 
 export type LoginResponse = {
@@ -25,4 +28,7 @@ export type JwtPayload = {
   erpId: string;
   name: string;
   role: UserRole;
+  departmentId?: number;
+  departmentName?: string;
+  departmentShortCode?: string;
 };

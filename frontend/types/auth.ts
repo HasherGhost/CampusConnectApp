@@ -5,6 +5,9 @@ export type AuthUser = {
   erpId: string;
   name: string;
   role: UserRole;
+  departmentId?: number;
+  departmentName?: string;
+  departmentShortCode?: string;
 };
 
 export type AuthSession = {

@@ -26,3 +26,15 @@ export interface AttendanceStudent {
     department_id: number;
   };
 }
+
+export interface AttendanceHistoryItem {
+  sessionId: number;
+  date: string;
+  status: "Present" | "Absent";
+}
+
+export interface SubjectAttendanceHistory {
+  subjectId: number;
+  subjectName: string;
+  history: AttendanceHistoryItem[];
+}
