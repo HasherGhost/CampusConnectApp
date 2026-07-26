@@ -7,10 +7,6 @@ export const YEAR_OPTIONS = [
 
 export const DEPARTMENT_OPTIONS = [
   { label: "Computer Science", value: 1 },
-  { label: "Electrical", value: 2 },
-  { label: "Mechanical", value: 3 },
-  { label: "Civil", value: 4 },
-  { label: "Chemical", value: 5 },
 ] as const;
 
 export const SUBJECT_OPTIONS = [
@@ -23,11 +19,56 @@ export const SUBJECT_OPTIONS = [
 ] as const;
 
 export const SECTION_OPTIONS = [
-  { label: "Section F", division: "F", divisionId: "5" },
-  { label: "Section B", division: "B", divisionId: "B" },
-  { label: "Section C", division: "C", divisionId: "C" },
-  { label: "Section D", division: "D", divisionId: "D" },
+  {
+    label: "Section A",
+    value: 1,
+    divisionId: 1,
+    division: "A",
+  },
+  {
+    label: "Section B",
+    value: 2,
+    divisionId: 2,
+    division: "B",
+  },
+  {
+    label: "Section D",
+    value: 3,
+    divisionId: 3,
+    division: "D",
+  },
+  {
+    label: "Section E",
+    value: 4,
+    divisionId: 4,
+    division: "E",
+  },
+  {
+    label: "Section F",
+    value: 5,
+    divisionId: 5,
+    division: "F",
+  },
+  {
+    label: "Section G",
+    value: 6,
+    divisionId: 6,
+    division: "G",
+  },
+  {
+    label: "Section C",
+    value: 8,
+    divisionId: 8,
+    division: "C",
+  },
 ] as const;
+
+// export const SECTION_OPTIONS = [
+//   { label: "Section F", division: "F", divisionId: "5" },
+//   { label: "Section B", division: "B", divisionId: "B" },
+//   { label: "Section C", division: "C", divisionId: "C" },
+//   { label: "Section D", division: "D", divisionId: "D" },
+// ] as const;
 
 export const SEMESTER_OPTIONS: Record<string, { label: string; value: number }[]> = {
   "First Year": [

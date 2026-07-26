@@ -17,4 +17,7 @@ router.post("/insert-session", authMiddleware_1.authenticateRequest, multerConfi
 router.get("/teacher/:teacherId", facultyController_1.getTeacherAttendance);
 router.get("/teacher/session/:sessionId", facultyController_1.getSessionAttendance);
 router.patch("/attendance/:attendanceId", facultyController_1.updateAttendance);
+// routes/export.ts
+router.get("/Export/dropdown-data", authMiddleware_1.authenticateRequest, (0, authMiddleware_1.authorizeRoles)("faculty"), facultyController_1.getExportDropdownData);
+router.post("/export-attendance", authMiddleware_1.authenticateRequest, (0, authMiddleware_1.authorizeRoles)("faculty"), facultyController_1.exportAttendance);
 exports.default = router;

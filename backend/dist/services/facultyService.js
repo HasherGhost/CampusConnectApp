@@ -8,9 +8,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const supabase_1 = require("../config/supabase");
 const firebaseAdmin_1 = require("../config/firebaseAdmin");
+const exceljs_1 = __importDefault(require("exceljs"));
 class FacultyService {
     static saveToken(erpid, token) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -32,9 +36,37 @@ class FacultyService {
             // console.log("this is payload",payload);
             console.log("this is insertion rotue");
             console.log("this is facultyErpId", facultyErpId);
+            // Fetch department short code
+            const { data: department, error: deptError } = yield supabase_1.supabase
+                .from("departments")
+                .select("short_code")
+                .eq("id", payload.department_id)
+                .single();
+            if (deptError) {
+                throw new Error(deptError.message);
+            }
+            // Fetch division
+            const { data: division, error: divError } = yield supabase_1.supabase
+                .from("divisions")
+                .select("div_name")
+                .eq("id", payload.division_id)
+                .single();
+            if (divError) {
+                throw new Error(divError.message);
+            }
+            // Convert year number to code
+            const yearMap = {
+                1: "FE",
+                2: "SE",
+                3: "TE",
+                4: "BE",
+            };
+            const yearCode = yearMap[payload.year];
+            // Generate embedding path
+            const embeddingPath = `${department.short_code}_${yearCode}_DIV-${division.div_name}`;
             const { data, error } = yield supabase_1.supabase
                 .from("sessions")
-                .insert(Object.assign(Object.assign({}, payload), { faculty_erpid: facultyErpId }))
+                .insert(Object.assign(Object.assign({}, payload), { faculty_erpid: facultyErpId, embedding_path: embeddingPath }))
                 .select()
                 .single();
             if (error) {
@@ -88,7 +120,7 @@ class FacultyService {
                 department_id,
                 session_date,
                 status: "Absent",
-                source: "system",
+                source: "auto",
                 confidence: null,
                 marked_by: null,
                 detected_at: null,
@@ -104,34 +136,242 @@ class FacultyService {
     }
     static getDropdownData() {
         return __awaiter(this, void 0, void 0, function* () {
-            // Subjects
+            // =======================
+            // Fetch Subjects
+            // =======================
             const { data: subjects, error: subjectError } = yield supabase_1.supabase
                 .from("subjects")
-                .select("id, name")
+                .select("*")
                 .order("name");
+            console.log("Subjects Error:", subjectError);
+            console.log("Raw Subjects:", subjects);
             if (subjectError) {
                 throw new Error(subjectError.message);
             }
-            // Divisions
+            // =======================
+            // Fetch Divisions
+            // =======================
             const { data: divisions, error: divisionError } = yield supabase_1.supabase
                 .from("divisions")
-                .select("id, div_name")
+                .select("*")
                 .order("div_name");
+            console.log("Divisions Error:", divisionError);
+            console.log("Raw Divisions:", divisions);
             if (divisionError) {
                 throw new Error(divisionError.message);
             }
-            console.log("subject", subjects, "sections", divisions);
-            return {
-                subjects: subjects.map((subject) => ({
-                    label: subject.subject_name,
-                    value: subject.id,
-                })),
-                sections: divisions.map((division) => ({
-                    label: `Section ${division.div_name}`,
-                    division: division.div_name,
-                    divisionId: division.id,
-                })),
+            // =======================
+            // Format Subjects
+            // =======================
+            const formattedSubjects = (subjects !== null && subjects !== void 0 ? subjects : []).map((subject) => ({
+                label: subject.name,
+                value: subject.id,
+            }));
+            // =======================
+            // Format Sections
+            // =======================
+            const formattedSections = (divisions !== null && divisions !== void 0 ? divisions : []).map((division) => ({
+                label: `Section ${division.div_name}`,
+                division: division.div_name,
+                divisionId: division.id,
+            }));
+            console.log("Formatted Subjects:", formattedSubjects);
+            console.log("Formatted Sections:", formattedSections);
+            const response = {
+                subjects: formattedSubjects,
+                sections: formattedSections,
             };
+            console.log("Final Response:", JSON.stringify(response, null, 2));
+            return response;
+        });
+    }
+    static getExportDropdownData(facultyErpid) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Subjects assigned to the teacher
+            const { data: sessionData, error: sessionError } = yield supabase_1.supabase
+                .from("sessions")
+                .select(`
+      subject_id,
+      subjects (
+        id,
+        name
+      )
+    `)
+                .eq("faculty_erpid", facultyErpid);
+            if (sessionError) {
+                throw new Error(sessionError.message);
+            }
+            // All divisions
+            const { data: divisionData, error: divisionError } = yield supabase_1.supabase
+                .from("divisions")
+                .select("id, div_name");
+            if (divisionError) {
+                throw new Error(divisionError.message);
+            }
+            // Remove duplicate subjects
+            const subjects = Array.from(new Map((sessionData !== null && sessionData !== void 0 ? sessionData : []).map((item) => [
+                item.subjects.id,
+                {
+                    label: item.subjects.name,
+                    value: item.subjects.id,
+                },
+            ])).values());
+            const divisions = (divisionData !== null && divisionData !== void 0 ? divisionData : []).map((item) => ({
+                label: item.div_name,
+                value: item.id,
+            }));
+            return {
+                subjects,
+                divisions,
+            };
+        });
+    }
+    // static async exportAttendance(
+    //   subjectId: number,
+    //   divisionId: number,
+    //   fromDate: string,
+    //   toDate: string
+    // ) {
+    //   // Get attendance records
+    //   const { data: attendanceDetails, error } = await supabase
+    //     .from("attendance_details")
+    //     .select(`
+    //       student_erpid,
+    //       session_date,
+    //       status
+    //     `)
+    //     .eq("subject_id", subjectId)
+    //     .eq("division_id", divisionId)
+    //     .gte("session_date", fromDate)
+    //     .lte("session_date", toDate)
+    //     .order("session_date");
+    //   if (error) {
+    //     throw new Error(error.message);
+    //   }
+    //   // Get unique ERPIDs
+    //   const erpids = [...new Set(attendanceDetails.map(a => a.student_erpid))];
+    //   console.log("attendanceDetails", attendanceDetails);
+    //   // Fetch students
+    //   const { data: students } = await supabase
+    //     .from("students")
+    //     .select("erpid, roll_no, name")
+    //     .in("erpid", erpids);
+    //   const studentMap = new Map(
+    //     (students ?? []).map(student => [student.erpid, student])
+    //   );
+    //   console.log("student " , studentMap);
+    //   // Create Excel
+    //   const workbook = new ExcelJS.Workbook();
+    //   const sheet = workbook.addWorksheet("Attendance");
+    //   sheet.columns = [
+    //     { header: "Date", key: "date", width: 15 },
+    //     { header: "Roll No", key: "roll", width: 15 },
+    //     { header: "ERPID", key: "erpid", width: 15 },
+    //     { header: "Student Name", key: "name", width: 30 },
+    //     { header: "Status", key: "status", width: 15 },
+    //   ];
+    //   attendanceDetails.forEach(record => {
+    //     const student = studentMap.get(record.student_erpid);
+    //     sheet.addRow({
+    //       date: record.session_date,
+    //       roll: student?.roll_no ?? "",
+    //       erpid: record.student_erpid,
+    //       name: student?.name ?? "",
+    //       status: record.status,
+    //     });
+    //   });
+    //   return workbook.xlsx.writeBuffer();
+    // }
+    static exportAttendance(subjectId, divisionId, fromDate, toDate) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Get attendance records
+            const { data: attendanceDetails, error } = yield supabase_1.supabase
+                .from("attendance_details")
+                .select(`
+      student_erpid,
+      session_date,
+      status
+    `)
+                .eq("subject_id", subjectId)
+                .eq("division_id", divisionId)
+                .gte("session_date", fromDate)
+                .lte("session_date", toDate)
+                .order("session_date");
+            if (error) {
+                throw new Error(error.message);
+            }
+            if (!attendanceDetails || attendanceDetails.length === 0) {
+                throw new Error("No attendance records found for the selected filters.");
+            }
+            // Get unique ERPIDs
+            const erpids = [...new Set(attendanceDetails.map((a) => a.student_erpid))];
+            // Fetch students
+            const { data: students } = yield supabase_1.supabase
+                .from("students")
+                .select("erpid, roll_no, name")
+                .in("erpid", erpids);
+            const studentMap = new Map((students !== null && students !== void 0 ? students : []).map((student) => [student.erpid, student]));
+            // Unique sorted dates (these become columns)
+            const dates = [...new Set(attendanceDetails.map((a) => a.session_date))].sort();
+            // Build lookup: erpid -> { date: status }
+            const statusLookup = new Map();
+            attendanceDetails.forEach((record) => {
+                if (!statusLookup.has(record.student_erpid)) {
+                    statusLookup.set(record.student_erpid, new Map());
+                }
+                statusLookup.get(record.student_erpid).set(record.session_date, record.status);
+            });
+            // Build student rows, sorted by roll no
+            const studentRows = erpids
+                .map((erpid) => {
+                var _a, _b;
+                const student = studentMap.get(erpid);
+                return {
+                    erpid,
+                    rollNo: (_a = student === null || student === void 0 ? void 0 : student.roll_no) !== null && _a !== void 0 ? _a : "",
+                    name: (_b = student === null || student === void 0 ? void 0 : student.name) !== null && _b !== void 0 ? _b : "",
+                };
+            })
+                .sort((a, b) => String(a.rollNo).localeCompare(String(b.rollNo), undefined, { numeric: true }));
+            // Build Excel
+            const workbook = new exceljs_1.default.Workbook();
+            const sheet = workbook.addWorksheet("Attendance");
+            // Fixed columns + one column per date
+            sheet.columns = [
+                { header: "Roll No", key: "rollNo", width: 12 },
+                { header: "ERP ID", key: "erpid", width: 15 },
+                { header: "Student Name", key: "name", width: 28 },
+                ...dates.map((date) => ({ header: date, key: date, width: 14 })),
+            ];
+            // Style header row
+            const headerRow = sheet.getRow(1);
+            headerRow.font = { bold: true };
+            headerRow.alignment = { horizontal: "center" };
+            // Add one row per student
+            studentRows.forEach((student) => {
+                const rowData = {
+                    rollNo: student.rollNo,
+                    erpid: student.erpid,
+                    name: student.name,
+                };
+                dates.forEach((date) => {
+                    var _a, _b;
+                    rowData[date] = (_b = (_a = statusLookup.get(student.erpid)) === null || _a === void 0 ? void 0 : _a.get(date)) !== null && _b !== void 0 ? _b : "-";
+                });
+                const row = sheet.addRow(rowData);
+                // Color-code Present/Absent cells
+                dates.forEach((date) => {
+                    const cell = row.getCell(date);
+                    if (cell.value === "Present") {
+                        cell.font = { color: { argb: "FF15803D" } }; // green
+                    }
+                    else if (cell.value === "Absent") {
+                        cell.font = { color: { argb: "FFDC2626" } }; // red
+                    }
+                    cell.alignment = { horizontal: "center" };
+                });
+            });
+            return workbook.xlsx.writeBuffer();
         });
     }
 }
