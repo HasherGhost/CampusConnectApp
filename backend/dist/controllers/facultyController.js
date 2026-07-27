@@ -20,7 +20,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDropdownData = exports.updateAttendance = exports.getSessionAttendance = exports.getTeacherAttendance = exports.insertSession = exports.triggerFacultyNotification = exports.saveFacultyToken = exports.createFacultyGatePass = void 0;
+exports.exportAttendance = exports.getExportDropdownData = exports.getDropdownData = exports.updateAttendance = exports.getSessionAttendance = exports.getTeacherAttendance = exports.insertSession = exports.triggerFacultyNotification = exports.saveFacultyToken = exports.createFacultyGatePass = void 0;
 const services_1 = require("../services");
 const cloudinary_1 = require("../utils/cloudinary");
 const supabase_1 = require("../config/supabase");
@@ -274,3 +274,54 @@ const getDropdownData = (req, res) => __awaiter(void 0, void 0, void 0, function
     }
 });
 exports.getDropdownData = getDropdownData;
+const getExportDropdownData = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    try {
+        const facultyErpid = (_a = req.authUser) === null || _a === void 0 ? void 0 : _a.erpId;
+        console.log("faculty erp id", facultyErpid);
+        if (!facultyErpid) {
+            return res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+        }
+        const data = yield services_1.FacultyService.getExportDropdownData(facultyErpid);
+        console.log("data from teacher session", data);
+        return res.status(200).json({
+            success: true,
+            data,
+        });
+    }
+    catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+        });
+    }
+});
+exports.getExportDropdownData = getExportDropdownData;
+const exportAttendance = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { subjectId, divisionId, fromDate, toDate } = req.body;
+        const buffer = yield services_1.FacultyService.exportAttendance(subjectId, divisionId, fromDate, toDate);
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", 'attachment; filename="Attendance.xlsx"');
+        return res.send(Buffer.from(buffer));
+    }
+    catch (err) {
+        const message = err.message || "Unable to export attendance.";
+        // No attendance found
+        if (message === "No attendance records found for the selected filters.") {
+            return res.status(404).json({
+                success: false,
+                message,
+            });
+        }
+        // Other errors
+        return res.status(500).json({
+            success: false,
+            message,
+        });
+    }
+});
+exports.exportAttendance = exportAttendance;
