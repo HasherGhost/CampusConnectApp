@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { getExportDropdownData } from "@/services/ExportAttendanceService";
-import { exportAttendance, shareAttendance } from "@/services/ExportAttendanceService";
+import { exportAttendance } from "@/services/ExportAttendanceService";
 
 // Native DateTimePicker only loaded on native platforms (web uses <input type="date">)
 let DateTimePicker: any = null;
@@ -91,15 +91,17 @@ const loadDropdown = async () => {
 
   setExporting(true);
   try {
-    const fileUri = await exportAttendance(
-      subject,
-      division,
-      toInputValue(fromDate),   // was fromDate.toISOString().split("T")[0]
-      toInputValue(toDate)      // was toDate.toISOString().split("T")[0]
-    );
+    const filePath = await exportAttendance(
+  subject,
+  division,
+  toInputValue(fromDate),
+  toInputValue(toDate)
+);
 
-    console.log("file share", fileUri);
-    await shareAttendance(fileUri);
+Alert.alert(
+  "Download Complete",
+  `Attendance exported successfully.\n\nSaved to:\n${filePath}`
+);
 } catch (error: any) {
   console.log(error);
 
@@ -131,19 +133,25 @@ const loadDropdown = async () => {
 
 <View style={styles.pickerContainer}>
   <Picker
-    selectedValue={subject}
-    onValueChange={(value) => setSubject(value)}
-    style={styles.picker}
-  >
+  selectedValue={subject}
+  onValueChange={(value) => setSubject(value)}
+  style={styles.picker}
+  dropdownIconColor="#7f1d1d"
+  itemStyle={{ color: "#222" }}
+>
     <Picker.Item label="Select Subject" value={null} />
 
-    {subjects.map((item) => (
-      <Picker.Item
-        key={item.value}
-        label={item.label}
-        value={item.value}
-      />
-    ))}
+    {subjects.map((item, index) => {
+  console.log("Picker Item", index, item);
+
+  return (
+    <Picker.Item
+      key={String(item.value)}
+      label={String(item.label)}
+      value={item.value}
+    />
+  );
+})}
   </Picker>
 </View>
 
@@ -152,11 +160,16 @@ const loadDropdown = async () => {
     <Text style={styles.label}>Division</Text>
 
 <View style={styles.pickerContainer}>
-  <Picker
-    selectedValue={division}
-    onValueChange={(value) => setDivision(value)}
-    style={styles.picker}
-  >
+ <Picker
+  selectedValue={division}
+  onValueChange={(value) => {
+    console.log("Selected division:", value, typeof value);
+    setDivision(value);
+  }}
+  style={styles.picker}
+  dropdownIconColor="#7f1d1d"
+  itemStyle={{ color: "#222" }}
+>
     <Picker.Item label="Select Division" value={null} />
 
     {divisions.map((item) => (
@@ -314,14 +327,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   pickerContainer: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    overflow: "hidden",
-  },
+  backgroundColor: "#F9FAFB",
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "#E5E7EB",
+  // overflow: "hidden",
+},
   picker: {
-    height: Platform.OS === "web" ? 46 : undefined,
+    color: "#111827",
   },
   dateRow: {
     flexDirection: "row",
