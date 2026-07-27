@@ -88,6 +88,22 @@ export default function FacultyDrawerLayout() {
         }}
       />
 
+       <Drawer.Screen
+        name="AttendanceReport"
+        options={{
+          title: 'Attendance Report',
+          drawerLabel: 'Student Attendance Report',
+          drawerIcon: ({ color, size }) => (
+            <MaterialIcons
+              name="fact-check"
+              color={color}
+              size={size}
+            />
+          ),
+        }}
+      />
+
+
       <Drawer.Screen
         name="gate-pass-request"
         options={{

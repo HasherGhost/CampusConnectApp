@@ -4,6 +4,7 @@ import { uploadImage } from "../utils/cloudinary";
 import { supabase } from "../config/supabase";
 import { createGatePassForAuthenticatedFaculty } from "./helpers/gatePassResponse";
 
+
 export const createFacultyGatePass = async (req: Request, res: Response): Promise<void> => {
   return createGatePassForAuthenticatedFaculty(req, res, "[faculty/gate-pass/create]");
 };
@@ -326,3 +327,77 @@ export const getDropdownData = async(req: Request, res: Response) => {
     });
   }
 }
+
+
+export const getExportDropdownData = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const facultyErpid = req.authUser?.erpId;
+    console.log("faculty erp id" , facultyErpid);
+
+    if (!facultyErpid) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const data = await FacultyService.getExportDropdownData(facultyErpid);
+
+    console.log("data from teacher session" , data);
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error: any) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+export const exportAttendance = async (req: Request, res: Response) => {
+  try {
+    const { subjectId, divisionId, fromDate, toDate } = req.body;
+
+    const buffer = await FacultyService.exportAttendance(
+      subjectId,
+      divisionId,
+      fromDate,
+      toDate
+    );
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="Attendance.xlsx"'
+    );
+
+    return res.send(Buffer.from(buffer));
+  } catch (err: any) {
+    const message = err.message || "Unable to export attendance.";
+
+    // No attendance found
+    if (message === "No attendance records found for the selected filters.") {
+      return res.status(404).json({
+        success: false,
+        message,
+      });
+    }
+
+    // Other errors
+    return res.status(500).json({
+      success: false,
+      message,
+    });
+  }
+};

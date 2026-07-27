@@ -9,6 +9,8 @@ import {
   getSessionAttendance,
   getDropdownData,
   updateAttendance,
+  getExportDropdownData,
+  exportAttendance
 } from "../controllers/facultyController";
 import upload from "../config/multerConfig";
 
@@ -37,5 +39,23 @@ router.patch(
   "/attendance/:attendanceId",
   updateAttendance
 );
+
+// routes/export.ts
+
+router.get(
+  "/Export/dropdown-data",
+  authenticateRequest,
+  authorizeRoles("faculty"),
+  getExportDropdownData
+  
+);
+
+router.post(
+  "/export-attendance",
+  authenticateRequest,
+  authorizeRoles("faculty"),
+  exportAttendance
+);
+
 
 export default router;
