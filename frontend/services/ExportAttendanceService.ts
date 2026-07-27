@@ -3,6 +3,11 @@ import { API_BASE_URL } from "../constants/env";
 import ReactNativeBlobUtil from "react-native-blob-util";
 import { Buffer } from "buffer";
 import { Platform } from "react-native";
+import * as Sharing from "expo-sharing";
+import FileViewer from "react-native-file-viewer";
+
+const EXCEL_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export const getExportDropdownData = async () => {
   const token = await AsyncStorage.getItem("token");
@@ -16,7 +21,47 @@ export const getExportDropdownData = async () => {
     }
   );
 
+  if (!response.ok) {
+    throw new Error("Unable to load dropdown data.");
+  }
+
   return await response.json();
+};
+
+export const shareAttendance = async (filePath: string) => {
+  if (Platform.OS === "web") {
+    return;
+  }
+
+  const available = await Sharing.isAvailableAsync();
+
+  if (!available) {
+    throw new Error("Sharing is not available on this device.");
+  }
+
+  await Sharing.shareAsync(`file://${filePath}`, {
+    mimeType: EXCEL_MIME,
+    dialogTitle: "Share Attendance Report",
+    UTI: "org.openxmlformats.spreadsheetml.sheet",
+  });
+};
+
+export const openAttendance = async (filePath: string) => {
+  if (Platform.OS === "web") {
+    return;
+  }
+
+  try {
+    await FileViewer.open(filePath, {
+      showOpenWithDialog: true,
+      showAppsSuggestions: true,
+    });
+  } catch (error) {
+    console.error(error);
+    throw new Error(
+      "No application found to open Excel files. Please install Microsoft Excel, Google Sheets, or WPS Office."
+    );
+  }
 };
 
 export const exportAttendance = async (
@@ -56,13 +101,12 @@ export const exportAttendance = async (
   }
 
   const fileName = `attendance_${fromDate}_to_${toDate}.xlsx`;
-
-  // ---------- WEB ----------
+    // ---------------- WEB ----------------
   if (Platform.OS === "web") {
     const arrayBuffer = await response.arrayBuffer();
 
     const blob = new Blob([arrayBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      type: EXCEL_MIME,
     });
 
     const url = URL.createObjectURL(blob);
@@ -77,17 +121,25 @@ export const exportAttendance = async (
     return fileName;
   }
 
-  // ---------- ANDROID / IOS ----------
+  // ---------------- ANDROID / IOS ----------------
 
   const arrayBuffer = await response.arrayBuffer();
 
   const base64 = Buffer.from(arrayBuffer).toString("base64");
 
   const downloadDir =
-    ReactNativeBlobUtil.fs.dirs.DownloadDir ||
-    ReactNativeBlobUtil.fs.dirs.DocumentDir;
+    Platform.OS === "android"
+      ? ReactNativeBlobUtil.fs.dirs.DownloadDir
+      : ReactNativeBlobUtil.fs.dirs.DocumentDir;
 
   const filePath = `${downloadDir}/${fileName}`;
+
+  // Remove old file if it already exists
+  const exists = await ReactNativeBlobUtil.fs.exists(filePath);
+
+  if (exists) {
+    await ReactNativeBlobUtil.fs.unlink(filePath);
+  }
 
   await ReactNativeBlobUtil.fs.writeFile(
     filePath,
@@ -95,15 +147,17 @@ export const exportAttendance = async (
     "base64"
   );
 
-  // Refresh Android media database
   if (Platform.OS === "android") {
-    await ReactNativeBlobUtil.fs.scanFile([
-      {
-        path: filePath,
-        mime:
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      },
-    ]);
+    try {
+      await ReactNativeBlobUtil.fs.scanFile([
+        {
+          path: filePath,
+          mime: EXCEL_MIME,
+        },
+      ]);
+    } catch (e) {
+      console.log("Media scan failed:", e);
+    }
   }
 
   return filePath;

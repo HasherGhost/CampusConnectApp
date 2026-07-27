@@ -10,7 +10,11 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { getExportDropdownData } from "@/services/ExportAttendanceService";
-import { exportAttendance } from "@/services/ExportAttendanceService";
+import {
+  exportAttendance,
+  openAttendance,
+  shareAttendance,
+} from "@/services/ExportAttendanceService";
 
 // Native DateTimePicker only loaded on native platforms (web uses <input type="date">)
 let DateTimePicker: any = null;
@@ -75,42 +79,82 @@ const loadDropdown = async () => {
 };
 
 
- const handleExport = async () => {
+const handleExport = async () => {
   if (!subject) {
     Alert.alert("Please select subject");
     return;
   }
+
   if (!division) {
     Alert.alert("Please select division");
     return;
   }
+
   if (fromDate > toDate) {
-    Alert.alert("Validation", "From date cannot be after To date.");
+    Alert.alert(
+      "Validation",
+      "From date cannot be after To date."
+    );
     return;
   }
 
   setExporting(true);
+
   try {
     const filePath = await exportAttendance(
-  subject,
-  division,
-  toInputValue(fromDate),
-  toInputValue(toDate)
-);
+      subject,
+      division,
+      toInputValue(fromDate),
+      toInputValue(toDate)
+    );
 
-Alert.alert(
-  "Download Complete",
-  `Attendance exported successfully.\n\nSaved to:\n${filePath}`
-);
-} catch (error: any) {
-  console.log(error);
+    Alert.alert(
+      "Attendance Exported Successfully",
+      "The attendance report has been downloaded successfully.",
+      [
+        {
+          text: "Open",
+          onPress: async () => {
+            try {
+              await openAttendance(filePath);
+            } catch (error: any) {
+              Alert.alert(
+                "Unable to Open",
+                error?.message ??
+                  "Could not open the exported file."
+              );
+            }
+          },
+        },
+        {
+          text: "Share",
+          onPress: async () => {
+            try {
+              await shareAttendance(filePath);
+            } catch (error: any) {
+              Alert.alert(
+                "Unable to Share",
+                error?.message ??
+                  "Could not share the exported file."
+              );
+            }
+          },
+        },
+        {
+          text: "Close",
+          style: "cancel",
+        },
+      ]
+    );
+  } catch (error: any) {
+    console.log(error);
 
-  Alert.alert(
-    "Export Failed",
-    error?.message || "Unable to export attendance."
-  );
-}
- finally {
+    Alert.alert(
+      "Export Failed",
+      error?.message ??
+        "Unable to export attendance."
+    );
+  } finally {
     setExporting(false);
   }
 };
