@@ -1,12 +1,13 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_BASE_URL } from "../constants/env";
-import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
-import {Buffer} from "buffer";
+import ReactNativeBlobUtil from "react-native-blob-util";
+import { Buffer } from "buffer";
 import { Platform } from "react-native";
+import * as Sharing from "expo-sharing";
+import FileViewer from "react-native-file-viewer";
 
-
-
+const EXCEL_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export const getExportDropdownData = async () => {
   const token = await AsyncStorage.getItem("token");
@@ -20,11 +21,48 @@ export const getExportDropdownData = async () => {
     }
   );
 
+  if (!response.ok) {
+    throw new Error("Unable to load dropdown data.");
+  }
+
   return await response.json();
 };
 
+export const shareAttendance = async (filePath: string) => {
+  if (Platform.OS === "web") {
+    return;
+  }
 
+  const available = await Sharing.isAvailableAsync();
 
+  if (!available) {
+    throw new Error("Sharing is not available on this device.");
+  }
+
+  await Sharing.shareAsync(`file://${filePath}`, {
+    mimeType: EXCEL_MIME,
+    dialogTitle: "Share Attendance Report",
+    UTI: "org.openxmlformats.spreadsheetml.sheet",
+  });
+};
+
+export const openAttendance = async (filePath: string) => {
+  if (Platform.OS === "web") {
+    return;
+  }
+
+  try {
+    await FileViewer.open(filePath, {
+      showOpenWithDialog: true,
+      showAppsSuggestions: true,
+    });
+  } catch (error) {
+    console.error(error);
+    throw new Error(
+      "No application found to open Excel files. Please install Microsoft Excel, Google Sheets, or WPS Office."
+    );
+  }
+};
 
 export const exportAttendance = async (
   subjectId: number,
@@ -51,68 +89,76 @@ export const exportAttendance = async (
     }
   );
 
-   console.log("response attendance export" , response);
-
   if (!response.ok) {
-  let message = "Unable to export attendance.";
+    let message = "Unable to export attendance.";
 
-  try {
-    const errorData = await response.json();
-    message = errorData.message || message;
-  } catch {
-    // Ignore if response isn't JSON
+    try {
+      const errorData = await response.json();
+      message = errorData.message || message;
+    } catch {}
+
+    throw new Error(message);
   }
 
-  throw new Error(message);
-}
+  const fileName = `attendance_${fromDate}_to_${toDate}.xlsx`;
+    // ---------------- WEB ----------------
+  if (Platform.OS === "web") {
+    const arrayBuffer = await response.arrayBuffer();
 
-  const arrayBuffer = await response.arrayBuffer();
-  const base64 = Buffer.from(arrayBuffer).toString("base64");
-
-  const fileUri = FileSystem.cacheDirectory + "Attendance.xlsx";
-
-
-
-    const fileName = `attendance_${fromDate}_to_${toDate}.xlsx`;
-
-   if (Platform.OS === "web") {
-    
     const blob = new Blob([arrayBuffer], {
-      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      type: EXCEL_MIME,
     });
+
     const url = URL.createObjectURL(blob);
+
     const link = document.createElement("a");
     link.href = url;
     link.download = fileName;
     link.click();
+
     URL.revokeObjectURL(url);
-    return fileName; // shareAttendance will no-op on web, see below
+
+    return fileName;
   }
 
-  await FileSystem.writeAsStringAsync(fileUri, base64, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  // ---------------- ANDROID / IOS ----------------
 
-  return fileUri;
+  const arrayBuffer = await response.arrayBuffer();
+
+  const base64 = Buffer.from(arrayBuffer).toString("base64");
+
+  const downloadDir =
+    Platform.OS === "android"
+      ? ReactNativeBlobUtil.fs.dirs.DownloadDir
+      : ReactNativeBlobUtil.fs.dirs.DocumentDir;
+
+  const filePath = `${downloadDir}/${fileName}`;
+
+  // Remove old file if it already exists
+  const exists = await ReactNativeBlobUtil.fs.exists(filePath);
+
+  if (exists) {
+    await ReactNativeBlobUtil.fs.unlink(filePath);
+  }
+
+  await ReactNativeBlobUtil.fs.writeFile(
+    filePath,
+    base64,
+    "base64"
+  );
+
+  if (Platform.OS === "android") {
+    try {
+      await ReactNativeBlobUtil.fs.scanFile([
+        {
+          path: filePath,
+          mime: EXCEL_MIME,
+        },
+      ]);
+    } catch (e) {
+      console.log("Media scan failed:", e);
+    }
+  }
+
+  return filePath;
 };
-
-export const shareAttendance = async (fileUri: string) => {
-if (Platform.OS === "web") {
-    // Download already happened inside exportAttendance
-    return;
-  }
-
-
-  const available = await Sharing.isAvailableAsync();
-
-  if (!available) {
-    throw new Error("Sharing is not available");
-  }
-
-  await Sharing.shareAsync(fileUri);
-};
-
-
-
-
-
